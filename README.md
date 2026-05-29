@@ -1,4 +1,3 @@
-````md id="yvt5l7"
 # README.md — Informe Técnico de Accesibilidad
 ## Proyecto: ShadowNet + Operación Camaleón
 
