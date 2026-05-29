@@ -232,7 +232,7 @@ El proyecto ahora cumple mejores prácticas básicas de accesibilidad y Clean Co
 
 #  Integrantes
 
-- Persona 1 — Seguridad y autenticación
-- Persona 2 — UI y accesibilidad
-- Persona 3 — Geolocalización y nodos
+- Laura Pulido — Seguridad y autenticación
+- Santiago Bernal — UI y accesibilidad
+- Emyl Morales — Geolocalización y nodos
 ````
