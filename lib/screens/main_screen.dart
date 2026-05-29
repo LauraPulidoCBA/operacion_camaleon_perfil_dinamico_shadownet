@@ -1,6 +1,7 @@
-"import 'dart:async';
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:vibration/vibration.dart';
 import '../providers/auth_provider.dart';
 import '../services/node_service.dart';
 import 'package:geolocator/geolocator.dart';
@@ -20,6 +21,7 @@ class _MainScreenState extends State<MainScreen> {
   Position? _lastPosition;
   bool _checkingLocation = false;
   bool _locationChecked = false;
+  bool _missionCompleted = false;
   StreamSubscription<Position>? _positionSubscription;
 
   @override
@@ -74,6 +76,26 @@ class _MainScreenState extends State<MainScreen> {
     _checkingLocation = false;
   }
 
+  Future<void> _vibrateMorse(String code) async {
+    if (await Vibration.hasVibrator() ?? false) {
+      final Map<String, List<int>> morse = {
+        '.': [100, 100],
+        '-': [300, 100],
+      };
+      final List<int> pattern = [];
+
+      for (var char in code.split('')) {
+        if (morse.containsKey(char)) {
+          pattern.addAll(morse[char]!);
+        }
+      }
+
+      if (pattern.isNotEmpty) {
+        await Vibration.vibrate(pattern: pattern);
+      }
+    }
+  }
+
   Future<void> _updateNearestNode(Position pos) async {
     _lastPosition = pos;
 
@@ -90,10 +112,20 @@ class _MainScreenState extends State<MainScreen> {
       );
     }
 
+    final bool reachedNode = newDistance != null && newDistance <= 1.0;
+    if (reachedNode) {
+      newDistance = 0.0;
+    }
+
     if (!mounted) return;
+
+    if (reachedNode && !_missionCompleted) {
+      await _vibrateMorse("...---...");
+    }
 
     setState(() {
       nearestNode = node;
+      _missionCompleted = reachedNode;
       distance = newDistance;
       _locationChecked = true;
     });
@@ -102,6 +134,7 @@ class _MainScreenState extends State<MainScreen> {
   @override
   Widget build(BuildContext context) {
     final authProvider = context.watch<AuthProvider>();
+    final colorScheme = Theme.of(context).colorScheme;
 
     if (authProvider.isAuthenticated) {
       if (_positionSubscription == null && !_checkingLocation) {
@@ -118,7 +151,7 @@ class _MainScreenState extends State<MainScreen> {
 
     if (!authProvider.isAuthenticated) {
       return Scaffold(
-        backgroundColor: Colors.black,
+        backgroundColor: colorScheme.background,
         body: Stack(
           children: [
             const MatrixBackground(),
@@ -130,13 +163,13 @@ class _MainScreenState extends State<MainScreen> {
                     Container(
                       decoration: BoxDecoration(
                         border: Border.all(
-                          color: Colors.greenAccent,
+                          color: colorScheme.primary,
                           width: 2,
                         ),
                         borderRadius: BorderRadius.circular(10),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.greenAccent.withOpacity(0.5),
+                            color: colorScheme.primary.withOpacity(0.5),
                             blurRadius: 20,
                             spreadRadius: 2,
                           ),
@@ -144,7 +177,7 @@ class _MainScreenState extends State<MainScreen> {
                       ),
                       child: ElevatedButton(
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.black,
+                          backgroundColor: colorScheme.surface,
                           padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 20),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(8),
@@ -155,12 +188,12 @@ class _MainScreenState extends State<MainScreen> {
                           "🔐 ESCANEAR HUELLA",
                           style: TextStyle(
                             fontFamily: 'Courier',
-                            color: Colors.greenAccent,
+                            color: colorScheme.primary,
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
                             shadows: [
                               Shadow(
-                                color: Colors.greenAccent,
+                                color: colorScheme.primary,
                                 blurRadius: 10,
                               ),
                             ],
@@ -173,14 +206,14 @@ class _MainScreenState extends State<MainScreen> {
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
                       border: Border.all(
-                        color: authProvider.isLocked ? Colors.redAccent : Colors.greenAccent,
+                        color: authProvider.isLocked ? colorScheme.error : colorScheme.primary,
                         width: 2,
                       ),
                       borderRadius: BorderRadius.circular(10),
-                      color: Colors.black.withOpacity(0.8),
+                      color: colorScheme.background.withOpacity(0.8),
                       boxShadow: [
                         BoxShadow(
-                          color: (authProvider.isLocked ? Colors.redAccent : Colors.greenAccent).withOpacity(0.3),
+                          color: (authProvider.isLocked ? colorScheme.error : colorScheme.primary).withOpacity(0.3),
                           blurRadius: 15,
                           spreadRadius: 1,
                         ),
@@ -192,12 +225,12 @@ class _MainScreenState extends State<MainScreen> {
                           : authProvider.statusMessage,
                       style: TextStyle(
                         fontFamily: 'Courier',
-                        color: authProvider.isLocked ? Colors.redAccent : Colors.greenAccent,
+                        color: authProvider.isLocked ? colorScheme.error : colorScheme.primary,
                         fontSize: authProvider.isLocked ? 18 : 14,
                         fontWeight: authProvider.isLocked ? FontWeight.bold : FontWeight.normal,
                         shadows: [
                           Shadow(
-                            color: authProvider.isLocked ? Colors.redAccent : Colors.greenAccent,
+                            color: authProvider.isLocked ? colorScheme.error : colorScheme.primary,
                             blurRadius: 10,
                           ),
                         ],
@@ -230,21 +263,20 @@ class _MainScreenState extends State<MainScreen> {
           "ShadowNet Terminal",
           style: TextStyle(
             fontFamily: 'Courier',
-            color: Colors.greenAccent,
+            color: colorScheme.onSurface,
             fontSize: 20,
             fontWeight: FontWeight.bold,
             shadows: [
               Shadow(
-                color: Colors.greenAccent,
+                color: colorScheme.primary,
                 blurRadius: 10,
               ),
             ],
           ),
         ),
-        backgroundColor: Colors.black,
-        elevation: 0,
+        // background and elevation come from AppBarTheme
       ),
-      backgroundColor: Colors.black,
+      backgroundColor: colorScheme.background,
       body: Stack(
         children: [
           const MatrixBackground(),
@@ -254,22 +286,30 @@ class _MainScreenState extends State<MainScreen> {
               children: [
                 TerminalWidget(
                   message: nearestNode != null
-                      ? "📡 Nodo Detectado: ${nearestNode!.name}\n"
-                          "Misión: ${nearestNode!.mission}\n"
-                          "Distancia: ${distance?.toStringAsFixed(0)} metros"
+                      ? (_missionCompleted
+                          ? "✅ MISIÓN CUMPLIDA: ${nearestNode!.mission}\n"
+                              "Objetivo alcanzado.\n"
+                              "Distancia: 0 metros"
+                          : "📡 Nodo Detectado: ${nearestNode!.name}\n"
+                              "Misión: ${nearestNode!.mission}\n"
+                              "Distancia: ${distance?.toStringAsFixed(0)} metros")
                       : _locationChecked
                           ? "🌍 No hay nodos disponibles a menos de 500 metros"
                           : "⏳ Buscando nodos...",
-                  missionCompleted: nearestNode != null,
+                  missionCompleted: _missionCompleted,
                 ),
                 const SizedBox(height: 20),
 
               // Botón para ir a la nueva pantalla de perfil dinámico
-                ElevatedButton(
-                  onPressed: () {
-                    Navigator.pushNamed(context, '/profile');
-                  },
-                  child: const Text("Ir a Perfil Camaleón"),
+                Semantics(
+                  label: 'Botón: Ir a Perfil Camaleón',
+                  button: true,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      Navigator.pushNamed(context, '/profile');
+                    },
+                    child: const Text("Ir a Perfil Camaleón"),
+                  ),
                 ),
 
 
@@ -342,10 +382,13 @@ class _MainScreenState extends State<MainScreen> {
                                 ),
                                 child: Row(
                                   children: [
-                                    Icon(
-                                      isNear ? Icons.gps_fixed : Icons.gps_not_fixed,
-                                      color: isNear ? Colors.greenAccent : Colors.orangeAccent,
-                                      size: 24,
+                                    Semantics(
+                                      label: isNear ? 'Icono: GPS fijado' : 'Icono: GPS no fijado',
+                                      child: Icon(
+                                        isNear ? Icons.gps_fixed : Icons.gps_not_fixed,
+                                        color: isNear ? colorScheme.primary : colorScheme.secondary,
+                                        size: 24,
+                                      ),
                                     ),
                                     const SizedBox(width: 12),
                                     Expanded(
@@ -429,4 +472,4 @@ class _MainScreenState extends State<MainScreen> {
       ),
     );
   }
-}"
+}

@@ -51,8 +51,9 @@ class _MatrixBackgroundState extends State<MatrixBackground> {
 
   @override
   Widget build(BuildContext context) {
+    final accent = Theme.of(context).colorScheme.primary;
     return CustomPaint(
-      painter: MatrixPainter(_columns),
+      painter: MatrixPainter(_columns, accentColor: accent),
       child: Container(),
     );
   }
@@ -85,13 +86,14 @@ class MatrixColumn {
 
 class MatrixPainter extends CustomPainter {
   final List<MatrixColumn> columns;
+  final Color accentColor;
 
-  MatrixPainter(this.columns);
+  MatrixPainter(this.columns, {required this.accentColor});
 
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = Colors.greenAccent.withOpacity(0.8)
+      ..color = accentColor.withOpacity(0.8)
       ..style = PaintingStyle.fill;
 
     final textPainter = TextPainter(
@@ -104,7 +106,7 @@ class MatrixPainter extends CustomPainter {
         final yPos = column.y - i * 20.0;
         if (yPos > 0 && yPos < size.height) {
           final opacity = (column.chars.length - i) / column.chars.length;
-          paint.color = Colors.greenAccent.withOpacity(opacity * 0.6);
+          paint.color = accentColor.withOpacity(opacity * 0.6);
 
           textPainter.text = TextSpan(
             text: column.chars[i],
@@ -114,7 +116,7 @@ class MatrixPainter extends CustomPainter {
               fontFamily: 'Courier',
               shadows: [
                 Shadow(
-                  color: Colors.greenAccent,
+                  color: accentColor,
                   blurRadius: 10,
                   offset: const Offset(0, 0),
                 ),

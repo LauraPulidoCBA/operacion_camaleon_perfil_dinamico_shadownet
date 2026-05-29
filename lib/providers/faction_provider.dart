@@ -25,4 +25,12 @@ class FactionProvider extends ChangeNotifier {
 
     notifyListeners();
   }
+
+  void resetFaction() {
+    
+    _currentFaction = "Hacker";
+    _currentLogo = "assets/hacker.jpg";
+    _themeColor = Colors.greenAccent;
+    notifyListeners();
+  }
 }

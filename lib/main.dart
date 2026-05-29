@@ -1,4 +1,4 @@
-"import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -25,24 +25,37 @@ class ShadowNetApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final factionProvider = context.watch<FactionProvider>();
+    final cs = ColorScheme.fromSeed(
+      seedColor: factionProvider.themeColor,
+      brightness: Brightness.dark,
+    );
 
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'ShadowNet + Operación Camaleón',
       theme: ThemeData(
         useMaterial3: true,
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: factionProvider.themeColor,
-          brightness: Brightness.dark,
-        ),
+        colorScheme: cs,
         textTheme: GoogleFonts.jetBrainsMonoTextTheme(
           Theme.of(context).textTheme,
         ),
+        elevatedButtonTheme: ElevatedButtonThemeData(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: cs.primary,
+            foregroundColor: cs.onPrimary,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          ),
+        ),
+        appBarTheme: AppBarTheme(
+          backgroundColor: cs.surface,
+          foregroundColor: cs.onSurface,
+          elevation: 0,
+        ),
       ),
-      home: const MainScreen(), // Aquí sigue arrancando ShadowNet
+      home: const MainScreen(),
       routes: {
-        '/profile': (context) => const ProfileScreen(), // Nueva pantalla
+        '/profile': (context) => const ProfileScreen(),
       },
     );
   }
-}"
+}

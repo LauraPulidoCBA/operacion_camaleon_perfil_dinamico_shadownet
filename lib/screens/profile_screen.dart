@@ -3,13 +3,14 @@ import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../providers/faction_provider.dart';
 import '../providers/auth_provider.dart';
+import '../widgets/logo_widget.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final factionProvider = context.watch<FactionProvider>();
+    // El provider se usa en widgets hijos si es necesario
 
     return Scaffold(
       appBar: AppBar(
@@ -28,41 +29,37 @@ class ProfileScreen extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // Imagen central del logo de la facción
-            Semantics(
-              label: "Imagen: Logo facción ${factionProvider.currentFaction}",
-              child: Image.asset(
-                factionProvider.currentLogo,
-                height: 120,
-              ),
-            ),
+            // Logo central dinámico
+            const LogoWidget(),
             const SizedBox(height: 30),
 
             // Selector de facción
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
-              children: [
+              children: const [
                 _FactionButton(label: "Hacker", logo: "assets/hacker.jpg"),
-                const SizedBox(width: 20),
+                SizedBox(width: 20),
                 _FactionButton(label: "Enforcer", logo: "assets/enforcer.jpg"),
-                const SizedBox(width: 20),
+                SizedBox(width: 20),
                 _FactionButton(label: "Ghost", logo: "assets/ghost.jpg"),
               ],
             ),
 
             const SizedBox(height: 40),
 
-            // Botón de cerrar sesión con Semantics
+            // Botón de cerrar sesión
             Semantics(
               label: "Botón: Finalizar misión y borrar rastro",
               button: true,
               child: ElevatedButton(
                 onPressed: () {
-                  // lógica de logout
                   final authProvider = context.read<AuthProvider>();
-                  authProvider.logout(); // Crear este método en AuthProvider
+                  authProvider.logout();
 
-                  // Regresa a la pantalla principal
+                  // Resetear facción al cerrar sesión
+                  final factionProvider = context.read<FactionProvider>();
+                  factionProvider.resetFaction();
+
                   Navigator.pop(context);
                 },
                 child: const Text("Cerrar Sesión"),
@@ -89,7 +86,9 @@ class _FactionButton extends StatelessWidget {
       label: "Botón: Seleccionar facción $label",
       button: true,
       child: ElevatedButton(
-        onPressed: () => factionProvider.changeFaction(label, logo),
+        onPressed: () async {
+          await factionProvider.changeFaction(label, logo);
+        },
         child: Text(label),
       ),
     );
